@@ -1,3 +1,4 @@
+import { BASE_URL } from "../App";
 import {
   Button,
   Modal,
@@ -12,14 +13,57 @@ import {
   FormLabel,
   Input,
   Textarea,
-  RadioGroup,
-  Radio,
   ModalFooter,
   IconButton,
+  useToast,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import { BiEditAlt } from "react-icons/bi";
-const EditModal = () => {
+const EditModal = ({ user, setUsers }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputs, setInputs] = useState({
+    name: user.name,
+    role: user.role,
+    description: user.description,
+  });
+  const toast = useToast();
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const response = await fetch(BASE_URL + "/friends/" + user.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inputs),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? data : u)));
+      toast({
+        status: "success",
+        title: "Yayy! 🎭",
+        description: "Friend updated successfully.",
+        duration: 2000,
+        position: "top-center",
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        status: "error",
+        title: "An error occurred. 🙅🏽‍♂️",
+        description: error.message,
+        duration: 4000,
+        isClosable: true,
+        position: "top-center",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <>
       <IconButton
@@ -32,38 +76,64 @@ const EditModal = () => {
       />
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>My new Nigga 👊</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <Flex alignItems={"center"} gap={4}>
-              {/* Left */}
-              <FormControl>
-                <FormLabel>Full Name</FormLabel>
-                <Input placeholder="John Doe" />
+        <form onSubmit={handleEditUser}>
+          <ModalContent>
+            <ModalHeader>My new Nigga 👊</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <Flex alignItems={"center"} gap={4}>
+                {/* Left */}
+                <FormControl>
+                  <FormLabel>Full Name</FormLabel>
+                  <Input
+                    placeholder="John Doe"
+                    value={inputs.name}
+                    onChange={(e) =>
+                      setInputs((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                  />
+                </FormControl>
+                {/* Right */}
+                <FormControl>
+                  <FormLabel>Role</FormLabel>
+                  <Input
+                    placeholder="Software Engineer"
+                    value={inputs.role}
+                    onChange={(e) =>
+                      setInputs((prev) => ({ ...prev, role: e.target.value }))
+                    }
+                  />
+                </FormControl>
+              </Flex>
+              <FormControl mt={4}>
+                <FormLabel>Description</FormLabel>
+                <Textarea
+                  resize={"none"}
+                  overflow={"hidden"}
+                  placeholder="He's a software engineer who loves to code and build things."
+                  value={inputs.description}
+                  onChange={(e) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
               </FormControl>
-              {/* Right */}
-              <FormControl>
-                <FormLabel>Role</FormLabel>
-                <Input placeholder="Software Engineer" />
-              </FormControl>
-            </Flex>
-            <FormControl mt={4}>
-              <FormLabel>Description</FormLabel>
-              <Textarea
-                resize={"none"}
-                overflow={"hidden"}
-                placeholder="He's a software engineer who loves to code and build things."
-              />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3}>
-              Add
-            </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                colorScheme="blue"
+                mr={3}
+                type="submit"
+                isLoading={isLoading}
+              >
+                Update
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </ModalFooter>
+          </ModalContent>
+        </form>
       </Modal>
     </>
   );
